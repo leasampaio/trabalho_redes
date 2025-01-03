@@ -1,0 +1,5 @@
+fastapi
+passlib
+jwt
+pyjwt
+cryptography

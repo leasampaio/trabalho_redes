@@ -1,6 +1,8 @@
 import socket
 import threading
 import hashlib
+import crypto
+
 from cryptography.fernet import Fernet
 
 # Gerar chave de criptografia
@@ -19,17 +21,28 @@ conexoes = {}
 def registrar_usuario(usuario, senha):
     if usuario in usuarios:
         return False
-    usuarios[usuario] = hashlib.sha256(senha.encode()).hexdigest()
+
+    usuarios[usuario] = {
+        "nome": usuario,
+        "senha": hashlib.sha256(senha.encode()).hexdigest()
+    }
     return True
 
-def autenticar_usuario(usuario, senha):
+def autenticar_usuario(usuario, senha, chave):
     if usuario in usuarios:
-        return usuarios[usuario] == hashlib.sha256(senha.encode()).hexdigest()
+        if usuarios[usuario]["senha"] == hashlib.sha256(senha.encode()).hexdigest():
+            usuarios[usuario]["chave"] = chave
+            return True
     return False
 
 def enviar_mensagem(destinatario, mensagem, remetente):
     if destinatario in conexoes:
-        conexoes[destinatario].send(f"Mensagem de {remetente}: {mensagem}\n".encode('utf-8'))
+        chave = usuarios[destinatario]["chave"]
+
+        plaintext = f"Mensagem de {remetente}: {mensagem}"
+        encrypted = crypto.encrypt(chave, plaintext)
+
+        conexoes[destinatario].send(encrypted)
         return True
     return False
 
@@ -58,8 +71,10 @@ def tratar_cliente(conn, addr):
                 usuario = conn.recv(1024).decode('utf-8').strip()
                 conn.send("Digite sua senha: ".encode('utf-8'))
                 senha = conn.recv(1024).decode('utf-8').strip()
+                conn.send("GET_KEY".encode('utf-8'))
+                chave = conn.recv(1024)
 
-                if autenticar_usuario(usuario, senha):
+                if autenticar_usuario(usuario, senha, chave):
                     conn.send("Login bem-sucedido!\n".encode('utf-8'))
                     conexoes[usuario] = conn
                     break
@@ -73,6 +88,11 @@ def tratar_cliente(conn, addr):
             if opcao == '1':
                 conn.send("Digite o nome do destinatário: ".encode('utf-8'))
                 destinatario = conn.recv(1024).decode('utf-8').strip()
+
+                if destinatario not in conexoes:
+                    conn.send("Usuário não encontrado ou offline.\n".encode('utf-8'))
+                    continue
+
                 conn.send("Digite sua mensagem: ".encode('utf-8'))
                 mensagem = conn.recv(1024).decode('utf-8').strip()
 
@@ -87,6 +107,8 @@ def tratar_cliente(conn, addr):
 
     except Exception as e:
         print(f"Erro com {addr}: {e}")
+        raise e
+        exit(1)
     finally:
         if usuario:
             conexoes.pop(usuario, None)

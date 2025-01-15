@@ -6,8 +6,16 @@ import traceback
 HOST = "127.0.0.2"
 PORT = 5000
 
+online = False
+
 def handle_messages(server_socket: socket.socket):
-    ...
+    global online
+
+    if not online:
+        return
+
+    plaintext = server_socket.recv(1024).decode().strip()
+    print(plaintext)
 
 def main():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -29,9 +37,9 @@ def start(server_socket):
     print("Conexão com o servidor estabelecida!")
     print()
 
-    threading.Thread(target=handle_messages, args=[server_socket]).start()
+    threading.Thread(target=handle_messages, args=(server_socket,)).start()
 
-    def getMessages():
+    def get_messages():
         messages = []
         while True:
             message = server_socket.recv(1024).decode().strip()
@@ -40,7 +48,7 @@ def start(server_socket):
             else:
                 return messages
 
-    def sendInput(key, value, no_encode=""):
+    def send_input(key, value, no_encode=""):
         message = server_socket.recv(1024).decode().strip()
         if message.startswith("GET") and message.endswith(key):
             server_socket.send(value if no_encode else value.encode())
@@ -63,11 +71,9 @@ def start(server_socket):
                 user_name = input("Usuário: ")
                 user_password = input("Senha: ")
 
-                server_socket.send("REGISTER".encode())
-                sendInput("user_name", user_name)
-                sendInput("user_password", user_password)
+                server_socket.send(f"REGISTER {user_name} {user_password}".encode())
 
-                response = getMessages(server_socket)
+                response = get_messages()
 
                 if response[0] == "0":
                     print("\nUsuário cadastrado com sucesso\n")
@@ -81,18 +87,16 @@ def start(server_socket):
                 user_name = input("Usuário: ")
                 user_password = input("Senha: ")
 
-                server_socket.send("LOGIN".encode())
-                sendInput("user_name", user_name)
-                sendInput("user_password", user_password)
-                sendInput("public_key", keys["public"], "no_encode")
+                server_socket.send(f"LOGIN {user_name} {user_password}".encode())
+                send_input("public_key", keys["public"], "no_encode")
 
-                response = getMessages(server_socket)
+                response = get_messages()
 
                 if response[0] == "0":
                     print("\nUsuário autenticado\n")
                     chat(server_socket, keys)
                 else:
-                    print(f"\nErro: {response}\n")
+                    print(f"\nErro: {response[1]}\n")
                     
             case _:
                 continue
@@ -101,9 +105,22 @@ def start(server_socket):
 
 
 def chat(server_socket, keys):
+    global online
+    online = True
+
     while True:
+        threading.Thread(target=handle_messages, args=[server_socket]).start()
+
         message = input("> ")
-        print(f"<Você> {message}")
+        if not message.strip():
+            continue
+
+        if message == "/quit":
+            break
+
+        server_socket.send(message.encode())
+
+    online = False
 
 if __name__ == "__main__":
     main()

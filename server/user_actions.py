@@ -21,16 +21,20 @@ def join_room(user, room_name):
 
     if room_name not in rooms:
         rooms[room_name] = {
-            "users": [user],
+            "users": [],
             "owner": user
         }
-    else:
-        rooms[room_name]["users"].append(user)
+
+    rooms[room_name]["users"].append(user)
+
+    online_users = len(rooms[room_name]["users"])
+    online_users_text = "Você é o único usuário nesta sala." if online_users <= 1 else "Estão online aqui: " + ", ".join([u["name"] for u in rooms[room_name]["users"]])
 
     broadcast(room_name, f"{user['name']} entrou na sala.", exclude_user=user)
-    user["client_socket"].send(f"Você entrou na sala {room_name}".encode())
+    user["client_socket"].send(f"Você entrou na sala {room_name}. {online_users_text}".encode())
 
 def log_out(user):
+    logging.info(f"{user["name"]} foi desconectado.")
     if user in rooms[user["room"]]["users"]:
         rooms[user["room"]]["users"].remove(user)
     try:

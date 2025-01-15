@@ -25,7 +25,7 @@ def handle_client_unsafely(client_socket: socket.socket, client_address):
         return value
 
     def send(message):
-        logging.info("Sending: ", message)
+        print("Sending: ", message)
         client_socket.send(message.encode())
         time.sleep(0.1)
         

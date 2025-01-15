@@ -104,6 +104,9 @@ def chat(user):
             args = message.split(" ")[1:]
 
             if command == "/j" or command == "/join":
+                if (len(args) < 1):
+                    send(user, ":: Comando inválido")
+                    continue
                 new_room = " ".join(args)
                 join_room(user, new_room)
 
@@ -119,6 +122,9 @@ def chat(user):
                 whisper(user, target_user_name, message)
 
             elif command == "/r" or command == "/reply":
+                if (len(args) < 1):
+                    send(user, ":: Comando inválido")
+                    continue
                 message = " ".join(args)
                 reply(user, message)
 

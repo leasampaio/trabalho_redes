@@ -5,6 +5,7 @@ import logging
 HOST = "127.0.0.2"
 PORT = 5000
 MAX_CONNECTIONS = 5
+MAX_ROOM_CAPACITY = 5
 
 MAIN_ROOM = "geral"
 

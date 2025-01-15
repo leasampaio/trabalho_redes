@@ -21,7 +21,7 @@ def join_room(user, room_name):
     
     if user in rooms[old_room]["users"]:
         rooms[old_room]["users"].remove(user)
-        broadcast(old_room, f"{user['name']} saiu da sala.", exclude_user=user)
+        broadcast(old_room, f"\n:: {user['name']} saiu da sala.\n", exclude_user=user)
 
     user["room"] = room_name
 
@@ -37,8 +37,8 @@ def join_room(user, room_name):
     online_users = len(rooms[room_name]["users"])
     online_users_text = "Você é o único usuário nesta sala." if online_users <= 1 else "Estão online aqui: " + user_list
 
-    broadcast(room_name, f"{user['name']} entrou na sala.", exclude_user=user)
-    send_message(user, f":: Você entrou na sala {room_name}. {online_users_text}")
+    broadcast(room_name, f"\n:: {user['name']} entrou na sala.\n", exclude_user=user)
+    send_message(user, f"\n:: Você entrou na sala {room_name}. {online_users_text}\n")
 
 def log_out(user):
     if not user["room"]:
@@ -56,9 +56,13 @@ def log_out(user):
         pass
 
 def whisper(user, target_user_name, message):
+    if target_user_name not in users:
+        send_message(user, ":: Usuário não encontrado")
+        return
+    
     target_user = users[target_user_name]
-    if not target_user:
-        send_message(user, "Usuário não encontrado")
+    if not target_user["room"]:
+        send_message(user, ":: Este usuário não está online no momento")
         return
 
     user["reply_to"] = target_user_name
@@ -108,7 +112,7 @@ def chat(user):
 
             elif command == "/w" or command == "/whisper":
                 if (len(args) < 2):
-                    send(user, "Comando inválido")
+                    send(user, ":: Comando inválido")
                     continue
                 target_user_name = args[0]
                 message = " ".join(args[1:])
@@ -119,7 +123,7 @@ def chat(user):
                 reply(user, message)
 
             else:
-                send_message(user, "Comando inválido")
+                send_message(user, ":: Comando inválido")
         else:
             logging.info(f"Mensagem \"{message}\" enviada por {user['name']}.")
             broadcast(user["room"], f"{user['name']}: {message}", exclude_user=user)

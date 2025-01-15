@@ -9,12 +9,20 @@ MAX_CONNECTIONS = 5
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-users: dict[str, str] = {}
+users = {}
 
 
 def handle_client(client_socket: socket.socket, client_address):
     logging.info(f"Conexão {client_address} estabelecida.")
-    
+
+    def waitFor(input_name):
+        client_socket.send(f"GET {input_name}".encode())
+        value = client_socket.recv(1024).decode().strip()
+        return value
+        
+    def endMessage():
+        client_socket.send("END_OF_MESSAGE".encode())
+
     while True:
         option = client_socket.recv(1024).decode().strip()
         logging.info(f"Mensagem {option} recebida de {client_address}.")
@@ -22,18 +30,39 @@ def handle_client(client_socket: socket.socket, client_address):
         match option:
             case "QUIT":
                 break
-            case "SUBSCRIBE":
-                user_name = client_socket.recv(1024).decode().strip()
-                user_password = client_socket.recv(1024).decode().strip()
-                
+            case "REGISTER":
+                user_name = waitFor("user_name")
+                user_password = waitFor("user_password")
+
                 if user_name in users:
                     client_socket.send("1".encode())
                     client_socket.send("Usuário já cadastrado".encode())
+                    endMessage()
                 else:
                     client_socket.send("0".encode())
-                    users[user_name] = user_password
+                    endMessage()
+
+                    new_user = {
+                        "password": user_password,
+                        "public_key": None
+                    }
+                    users[user_name] = new_user
+
+                    logging.info(f"Usuário {user_name} cadastrado.")
+            case "LOGIN":
+                user_name = waitFor("user_name")
+                user_password = waitFor("user_password")
+
+                if (user_name in users) and (users[user_name]["password"] == user_password):
+                    client_socket.send("0".encode())
+                    client_socket.send("Usuário autenticado".encode())
+                    endMessage()
+                else:
+                    client_socket.send("1".encode())
+                    client_socket.send("Usuário ou senha inválidos".encode())
+                    endMessage()
             case _:
-                continue
+                break
 
     client_socket.close()
     logging.info(f"Conexão {client_address} encerrada.")

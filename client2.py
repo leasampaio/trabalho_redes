@@ -20,8 +20,21 @@ def main():
     print()
 
     threading.Thread(target=handle_messages, args=[server_socket]).start()
-    
-    
+
+    def getMessages(s):
+        messages = []
+        while True:
+            message = server_socket.recv(1024).decode().strip()
+            if message != "END_OF_MESSAGE":
+                messages.append(message)
+            else:
+                return messages
+
+    def sendInput(key, value):
+        message = server_socket.recv(1024).decode().strip()
+        if message.startswith("GET") and message.endswith(key):
+            server_socket.send(value.encode())
+  
     while True:
         print("Escolha uma opção:")
         print("[0] Sair")
@@ -34,23 +47,42 @@ def main():
             case "0":
                 server_socket.send("QUIT".encode())
                 break
+
             case "1":
+                print("\n")
                 user_name = input("Usuário: ")
                 user_password = input("Senha: ")
-                server_socket.send("SUBSCRIBE".encode())
-                server_socket.send(user_name.encode())
-                server_socket.send(user_password.encode())
-                
-                response = server_socket.recv(1024).decode().strip()
-                if response == "1":
-                    response = server_socket.recv(1024).decode().strip()
-                    print(f"Erro: {response}")
+
+                server_socket.send("REGISTER".encode())
+                sendInput("user_name", user_name)
+                sendInput("user_password", user_password)
+
+                response = getMessages(server_socket)
+
+                if response[0] == "0":
+                    print("\nUsuário cadastrado com sucesso\n")
                 else:
-                    print("Usuário cadastrado com sucesso")
+                    print(f"\nErro: {response[1]}\n")
+
+            case "2":
+                print("\n")
+                user_name = input("Usuário: ")
+                user_password = input("Senha: ")
+
+                server_socket.send("LOGIN".encode())
+                sendInput("user_name", user_name)
+                sendInput("user_password", user_password)
+
+                response = getMessages(server_socket)
+
+                if response[0] == "0":
+                    print("\nUsuário autenticado\n")
+                else:
+                    print(f"\nErro: {response[1]}\n")
+                    
             case _:
                 continue
-                
-        
+
         # server_socket.send(message.encode())
 
     server_socket.close()

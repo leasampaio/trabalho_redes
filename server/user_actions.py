@@ -49,6 +49,7 @@ def whisper(user, target_user_name, message):
         user["client_socket"].send("Usuário não encontrado".encode())
         return
 
+    user["reply_to"] = target_user
     target_user["reply_to"] = user
     target_user["client_socket"].send(f"{user['name']} sussurrou: {message}".encode())
     user["client_socket"].send(f"<<p/ {target_user_name}>>: {message}".encode())

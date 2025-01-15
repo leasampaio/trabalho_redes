@@ -104,6 +104,13 @@ def chat(server_socket, server_key, keys):
     global online
     global user_input
 
+    print("Conectado ao chat!")
+    print("Digite /quit para sair do chat")
+    print("Digite /w <usuário> <mensagem> para enviar uma mensagem privada")
+    print("Digite /r <mensagem> para responder à última mensagem privada recebida")
+    print("Digite /join <sala> para entrar numa sala")
+    print("Digite /leave para sair de uma sala e voltar à sala geral")
+
     online = True
 
     output_thread = threading.Thread(target=print_messages, args=[server_socket, keys])

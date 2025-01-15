@@ -17,7 +17,7 @@ def create_user(user_name, user_password, client_socket):
     users[user_name] = new_user
 
 def join_room(user, room_name):
-    if room_name in rooms and room_name != MAIN_ROOM and len(rooms[room_name]["users"]) >= MAX_CONNECTIONS:
+    if room_name in rooms and room_name != MAIN_ROOM and len(rooms[room_name]["users"]) >= MAX_ROOM_CAPACITY:
         send_message(user, ":: Esta sala está cheia no momento, tente outra sala.")
         return
     

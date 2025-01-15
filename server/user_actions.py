@@ -10,7 +10,7 @@ def create_user(user_name, user_password, client_socket):
         "name": user_name,
         "password": user_password,
         "public_key": None,
-        "room": MAIN_ROOM,
+        "room": None,
         "client_socket": client_socket,
         "reply_to": None
     }
@@ -33,19 +33,25 @@ def join_room(user, room_name):
 
     rooms[room_name]["users"].append(user)
 
+    user_list = ", ".join([u["name"] for u in rooms[room_name]["users"] if u["name"] != user["name"]])
     online_users = len(rooms[room_name]["users"])
-    online_users_text = "Você é o único usuário nesta sala." if online_users <= 1 else "Estão online aqui: " + ", ".join([u["name"] for u in rooms[room_name]["users"]])
+    online_users_text = "Você é o único usuário nesta sala." if online_users <= 1 else "Estão online aqui: " + user_list
 
     broadcast(room_name, f"{user['name']} entrou na sala.", exclude_user=user)
-    send_message(user, f"Você entrou na sala {room_name}. {online_users_text}")
+    send_message(user, f":: Você entrou na sala {room_name}. {online_users_text}")
 
 def log_out(user):
+    if not user["room"]:
+        return
+
     logging.info(f"{user["name"]} foi desconectado.")
+    
     if user in rooms[user["room"]]["users"]:
         rooms[user["room"]]["users"].remove(user)
     try:
         user["client_socket"].close()
         user["client_socket"] = None
+        user["room"] = None
     except:
         pass
 
@@ -94,7 +100,7 @@ def chat(user):
             args = message.split(" ")[1:]
 
             if command == "/j" or command == "/join":
-                new_room = args[0]
+                new_room = " ".join(args)
                 join_room(user, new_room)
 
             elif command == "/l" or command == "/leave":

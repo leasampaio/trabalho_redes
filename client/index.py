@@ -3,6 +3,7 @@ from start_client import *
 import threading
 import socket
 import traceback 
+import time
 
 def main():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -11,10 +12,11 @@ def main():
         start(server_socket)
     except Exception as e:
         print(f"Erro: {e}")
-        traceback.print_exc() 
-    finally:
-        print("Encerrando cliente...")
         server_socket.close()
+        print("Conexão com o servidor perdida!")
+        time.sleep(1)
+        print("Reconectando...")
+        main() 
 
 if __name__ == "__main__":
     main()

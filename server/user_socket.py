@@ -80,8 +80,12 @@ def handle_client_unsafely(client_socket: socket.socket, client_address):
 
                 if (user_name in users and users[user_name]["password"] == user_password):
                     user = users[user_name]
+
+                    log_out(user)
+
                     user["public_key"] = client_key
                     user["client_socket"] = client_socket
+                    user["room"] = MAIN_ROOM
 
                     send("0")
                     send("Usuário autenticado")

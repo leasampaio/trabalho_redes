@@ -21,6 +21,7 @@ def join_room(user, room_name):
     
     if user in rooms[old_room]["users"]:
         rooms[old_room]["users"].remove(user)
+        broadcast(old_room, f"{user['name']} saiu da sala.", exclude_user=user)
 
     user["room"] = room_name
 
@@ -54,14 +55,14 @@ def whisper(user, target_user_name, message):
         send_message(user, "Usuário não encontrado")
         return
 
-    user["reply_to"] = target_user
-    target_user["reply_to"] = user
+    user["reply_to"] = target_user_name
+    target_user["reply_to"] = user["name"]
 
-    send_message(target_user, f"{user['name']} sussurrou: {message}")
+    send_message(target_user, f"<< {user["name"]} (privado): {message}")
     send_message(user, f">> p/ {target_user_name}: {message}")
 
 def reply(user, message):
-    whisper(user, user["reply_to"]["name"], message)
+    whisper(user, user["reply_to"], message)
 
 def broadcast(room_name, message, exclude_user=None):
     for user in rooms[room_name]["users"]:
@@ -106,12 +107,10 @@ def chat(user):
                 target_user_name = args[0]
                 message = " ".join(args[1:])
                 whisper(user, target_user_name, message)
-                return
 
             elif command == "/r" or command == "/reply":
                 message = " ".join(args)
                 reply(user, message)
-                return
 
             else:
                 send_message(user, "Comando inválido")

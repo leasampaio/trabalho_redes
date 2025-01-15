@@ -1,11 +1,5 @@
-# TODO
-#  - conexao com o servidor para implementar as funcionalidades e requisitos do projeto
 
-# - cada cliente se comunica com o servidor, que gerenciara a comunicacao entre clientes
-# - cada cliente deve se cadastrar junto ao servidor como um usuario
-# - cada cliente deve poder se comunicar com outro cliente usando o nome de usuario (semelhante ao que ocorre no WhatsApp atraves do numero de telefone)
-# - (OPCIONAL) clientes podem se juntar a grupos multicast (semelhante ao que ocorre no whatsapp)
-
+import os
 import socket
 import threading
 import crypto
@@ -14,6 +8,7 @@ chaves = {}
 
 HOST = '127.0.0.1'
 PORT = 5000
+UDP_PORT = 5001
 
 def receber_mensagens(cliente):
     global chaves
@@ -34,6 +29,15 @@ def receber_mensagens(cliente):
             except Exception as e:
                 print(f"Conexão encerrada: {e}")
             break
+
+def enviar_arquivo_udp(nome_arquivo):
+    udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+    with open(nome_arquivo, "rb") as f:
+        while (dados := f.read(4096)):
+            udp_socket.sendto(dados, (HOST, UDP_PORT))
+
+    udp_socket.close()
 
 def iniciar_cliente():
     global chaves

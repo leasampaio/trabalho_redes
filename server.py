@@ -13,6 +13,7 @@ cipher = Fernet(KEY)
 HOST = '127.0.0.1'
 PORT = 5000
 MAX_CONNECTIONS = 5
+UDP_PORT = 5001
 
 # Dicionário para armazenar usuários e suas conexões
 usuarios = {}
@@ -82,7 +83,7 @@ def tratar_cliente(conn, addr):
                     conn.send("Usuário ou senha inválidos.\n".encode('utf-8'))
 
         while True:
-            conn.send("[1] Enviar mensagem\n[2] Sair\nEscolha uma opção: ".encode('utf-8'))
+            conn.send("[1] Enviar mensagem\n[2] Enviar arquivo\n[3] Sair\nEscolha uma opção: ".encode('utf-8'))
             opcao = conn.recv(1024).decode('utf-8').strip()
 
             if opcao == '1':
@@ -102,6 +103,37 @@ def tratar_cliente(conn, addr):
                     conn.send("Usuário não encontrado ou offline.\n".encode('utf-8'))
 
             elif opcao == '2':
+                conn.send("Digite o nome do destinatário para o arquivo: ".encode('utf-8'))
+                destinatario = conn.recv(1024).decode('utf-8').strip()
+
+                if destinatario not in conexoes:
+                    conn.send("Usuário não encontrado ou offline.\n".encode('utf-8'))
+                    continue
+
+                conn.send("Digite o nome do arquivo: ".encode('utf-8'))
+                nome_arquivo = conn.recv(1024).decode('utf-8').strip()
+
+                udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                udp_socket.bind((HOST, UDP_PORT))
+                udp_socket.settimeout(10)  # Timeout de 10 segundos
+
+                conn.send(f" {destinatario} pronto para receber o arquivo.\n".encode('utf-8'))
+
+                try:
+                    with open(f"{destinatario}_{nome_arquivo}", "wb") as f:
+                        while True:
+                            try:
+                                dados, _ = udp_socket.recvfrom(4096)
+                                if dados == b"FIM":
+                                    break
+                                f.write(dados)
+                            except socket.timeout:
+                                conn.send("Erro: Tempo limite na recepção do arquivo.\n".encode('utf-8'))
+                                break
+                finally:
+                    udp_socket.close()            
+
+            elif opcao == '3':
                 conn.send("Desconectando...\n".encode('utf-8'))
                 break
 

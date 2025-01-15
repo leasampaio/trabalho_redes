@@ -24,6 +24,7 @@ def chat(server_socket, keys):
             continue
 
         if message == "/quit":
+            online = False
             break
 
         server_socket.send(message.encode())

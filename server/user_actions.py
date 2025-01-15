@@ -104,5 +104,5 @@ def chat(user):
             else:
                 client_socket.send("Comando inválido".encode())
         else:
-            logging.info(f"Mensagem {message} recebida de {user['name']}.")
+            logging.info(f"Mensagem \"{message}\" enviada por {user['name']}.")
             broadcast(user["room"], f"{user['name']}: {message}", exclude_user=user)

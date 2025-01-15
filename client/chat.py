@@ -23,10 +23,10 @@ def chat(server_socket, keys):
         if not message.strip():
             continue
 
+        server_socket.send(message.encode())
+
         if message == "/quit":
             online = False
             break
-
-        server_socket.send(message.encode())
 
     online = False

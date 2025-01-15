@@ -5,6 +5,7 @@ import socket
 import threading
 import traceback 
 import logging
+import time
 
 def handle_client(client_socket: socket.socket, client_address):
     try:
@@ -24,11 +25,13 @@ def handle_client_unsafely(client_socket: socket.socket, client_address):
         return value
 
     def send(message):
+        print("sending", message)
         client_socket.send(message.encode())
+        time.sleep(0.1)
         
     def endMessage():
-        client_socket.send("END_OF_MESSAGE".encode())
-
+        send("END_OF_MESSAGE")
+        
     while True:
         raw_message = client_socket.recv(1024).decode().strip()
 

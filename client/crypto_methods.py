@@ -3,6 +3,7 @@ from cryptography.hazmat.primitives import serialization, hashes
 
 def generate_keys():
     """Generates a pair of RSA keys (private and public)."""
+
     private_key = rsa.generate_private_key(
         public_exponent=65537,
         key_size=2048

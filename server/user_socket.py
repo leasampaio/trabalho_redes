@@ -10,6 +10,15 @@ import logging
 import time
 
 def handle_client(client_socket: socket.socket, client_address):
+    global client_count
+
+    if client_count >= MAX_CONNECTIONS:
+        client_socket.close()
+        return
+
+    client_count += 1
+    print(f"Clientes conectados: {client_count}")
+
     try:
         handle_client_unsafely(client_socket, client_address)
     except Exception as e:
@@ -17,6 +26,8 @@ def handle_client(client_socket: socket.socket, client_address):
         traceback.print_exc() 
     finally:
         client_socket.close()
+        client_count -= 1
+        print(f"Clientes conectados: {client_count}")
 
 def handle_client_unsafely(client_socket: socket.socket, client_address):
     client_socket.send(keys["public"])

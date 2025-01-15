@@ -1,4 +1,9 @@
 from memory_data import *
+from crypto_methods import *
+
+def send_message(user, message):
+    encrypted = encrypt(user["public_key"], message)
+    user["client_socket"].send(encrypted)
 
 def create_user(user_name, user_password, client_socket):
     new_user = {
@@ -31,7 +36,7 @@ def join_room(user, room_name):
     online_users_text = "Você é o único usuário nesta sala." if online_users <= 1 else "Estão online aqui: " + ", ".join([u["name"] for u in rooms[room_name]["users"]])
 
     broadcast(room_name, f"{user['name']} entrou na sala.", exclude_user=user)
-    user["client_socket"].send(f"Você entrou na sala {room_name}. {online_users_text}".encode())
+    send_message(user, f"Você entrou na sala {room_name}. {online_users_text}")
 
 def log_out(user):
     logging.info(f"{user["name"]} foi desconectado.")
@@ -46,13 +51,14 @@ def log_out(user):
 def whisper(user, target_user_name, message):
     target_user = users[target_user_name]
     if not target_user:
-        user["client_socket"].send("Usuário não encontrado".encode())
+        send_message(user, "Usuário não encontrado")
         return
 
     user["reply_to"] = target_user
     target_user["reply_to"] = user
-    target_user["client_socket"].send(f"{user['name']} sussurrou: {message}".encode())
-    user["client_socket"].send(f"<<p/ {target_user_name}>>: {message}".encode())
+
+    send_message(target_user, f"{user['name']} sussurrou: {message}")
+    send_message(user, f">> p/ {target_user_name}: {message}")
 
 def reply(user, message):
     whisper(user, user["reply_to"]["name"], message)
@@ -62,7 +68,7 @@ def broadcast(room_name, message, exclude_user=None):
         if user["name"] != exclude_user["name"]:
             print (f"Enviando mensagem para {user['name']}: {message}")
             try:
-                user["client_socket"].send(message.encode())
+                send_message(user, message)
             except Exception as e:
                 logging.error(f"Erro ao enviar mensagem para {user['name']}: {e}")
                 log_out(user)
@@ -76,7 +82,8 @@ def chat(user):
             logging.error(f"Sala {user['room']} não existe.")
             return
 
-        message = client_socket.recv(1024).decode().strip()
+        encrypted = client_socket.recv(1024)
+        message = decrypt(keys["private"], encrypted).strip()
 
         if not message:
             log_out(user)
@@ -94,7 +101,7 @@ def chat(user):
 
             elif command == "/w" or command == "/whisper":
                 if (len(args) < 2):
-                    client_socket.send("Comando inválido".encode())
+                    send(user, "Comando inválido")
                     continue
                 target_user_name = args[0]
                 message = " ".join(args[1:])
@@ -107,7 +114,7 @@ def chat(user):
                 return
 
             else:
-                client_socket.send("Comando inválido".encode())
+                send_message(user, "Comando inválido")
         else:
             logging.info(f"Mensagem \"{message}\" enviada por {user['name']}.")
             broadcast(user["room"], f"{user['name']}: {message}", exclude_user=user)

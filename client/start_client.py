@@ -5,6 +5,7 @@ from chat import *
 import threading
 
 def start(server_socket):
+    global server_key
 
     server_socket.connect((HOST, PORT))
 
@@ -15,18 +16,19 @@ def start(server_socket):
     def get_messages():
         messages = []
         while True:
-            message = server_socket.recv(1024).decode().strip()
+            encrypted = server_socket.recv(1024)
+            message = decrypt(keys["private"], encrypted)
             if message != "END_OF_MESSAGE":
                 messages.append(message)
             else:
                 return messages
-
-    def send_input(key, value, no_encode=""):
-        message = server_socket.recv(1024).decode().strip()
-        if message.startswith("GET") and message.endswith(key):
-            server_socket.send(value if no_encode else value.encode())
   
     while True:
+        if not server_key:
+            server_key = server_socket.recv(1024)
+            server_socket.send(keys["public"])
+            continue
+
         print("Escolha uma opção:")
         print("[0] Sair")
         print("[1] Registrar")
@@ -34,9 +36,13 @@ def start(server_socket):
 
         message = input("> ")
 
+        def send(message):
+            encrypted = encrypt(server_key, message)
+            server_socket.send(encrypted)
+
         match message:
             case "0":
-                server_socket.send("QUIT".encode())
+                send("QUIT".encode())
                 break
 
             case "1":
@@ -44,7 +50,7 @@ def start(server_socket):
                 user_name = input("Usuário: ")
                 user_password = input("Senha: ")
 
-                server_socket.send(f"REGISTER {user_name} {user_password}".encode())
+                send(f"REGISTER {user_name} {user_password}")
 
                 response = get_messages()
 
@@ -55,19 +61,17 @@ def start(server_socket):
 
             case "2":
                 print("\n")
-                keys = generate_keys()
 
                 user_name = input("Usuário: ")
                 user_password = input("Senha: ")
 
-                server_socket.send(f"LOGIN {user_name} {user_password}".encode())
-                send_input("public_key", keys["public"], "no_encode")
+                send(f"LOGIN {user_name} {user_password}")
 
                 response = get_messages()
 
                 if response[0] == "0":
                     print("\nUsuário autenticado\n")
-                    chat(server_socket, keys)
+                    chat(server_socket, server_key, keys)
                 else:
                     print(f"\nErro: {response[1]}\n")
                     

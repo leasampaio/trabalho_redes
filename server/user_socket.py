@@ -1,5 +1,7 @@
 from memory_data import *
 from user_actions import *
+from config_vars import *
+from crypto_methods import *
 
 import socket
 import threading
@@ -17,23 +19,23 @@ def handle_client(client_socket: socket.socket, client_address):
         client_socket.close()
 
 def handle_client_unsafely(client_socket: socket.socket, client_address):
-    logging.info(f"Conexão {client_address} estabelecida.")
+    client_socket.send(keys["public"])
+    client_key = client_socket.recv(1024)
 
-    def waitFor(input_name):
-        client_socket.send(f"GET {input_name}".encode())
-        value = client_socket.recv(1024).decode().strip()
-        return value
+    logging.info(f"Conexão {client_address} estabelecida.")
 
     def send(message):
         print("Sending: ", message)
-        client_socket.send(message.encode())
+        encrypted = encrypt(client_key, message)
+        client_socket.send(encrypted)
         time.sleep(0.1)
         
     def endMessage():
         send("END_OF_MESSAGE")
         
     while True:
-        raw_message = client_socket.recv(1024).decode().strip()
+        encrypted = client_socket.recv(1024)
+        raw_message = decrypt(keys["private"], encrypted).strip()
 
         option = raw_message.split(" ")[0].upper()
         args = raw_message.split(" ")[1:]
@@ -76,11 +78,9 @@ def handle_client_unsafely(client_socket: socket.socket, client_address):
                 user_name = args[0]
                 user_password = args[1]
 
-                public_key = waitFor("public_key")
-
                 if (user_name in users and users[user_name]["password"] == user_password):
                     user = users[user_name]
-                    user["public_key"] = public_key
+                    user["public_key"] = client_key
                     user["client_socket"] = client_socket
 
                     send("0")

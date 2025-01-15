@@ -1,6 +1,8 @@
 from memory_data import *
 from crypto_methods import *
 
+MAX_ROOM_CAPACITY = 5
+
 def send_message(user, message):
     encrypted = encrypt(user["public_key"], message)
     user["client_socket"].send(encrypted)
@@ -17,8 +19,12 @@ def create_user(user_name, user_password, client_socket):
     users[user_name] = new_user
 
 def join_room(user, room_name):
-    old_room = user["room"]
+    if room_name in rooms and len(rooms[room_name]["users"]) >= MAX_ROOM_CAPACITY:
+        send_message(user, ":: Esta sala está cheia no momento, tente outra sala.")
+        return
     
+    old_room = user["room"]
+
     if user in rooms[old_room]["users"]:
         rooms[old_room]["users"].remove(user)
         broadcast(old_room, f"\n:: {user['name']} saiu da sala.\n", exclude_user=user)

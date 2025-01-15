@@ -17,6 +17,7 @@ def client_file_send(server_socket: socket.socket):
     
     print("Arquivo enviado.")
 
+
 def server_file(client_socket_from: socket.socket, client_socket_to: socket.socket):
     while True:
         data = client_socket_from.recv(1024)
@@ -24,8 +25,8 @@ def server_file(client_socket_from: socket.socket, client_socket_to: socket.sock
             break
         client_socket_to.sendall(data)
 
+
 def client_file_receive(server_socket: socket.socket):
-    # implementar passar nome do arquivo
     filename = "file"
     path = Path(filename)
     i = 1
